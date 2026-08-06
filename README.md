@@ -14,10 +14,26 @@ boards/zbook/                 # board definition
   zbook_rp2350b_m33.dts       #   standalone variant + partitions
   zbook_rp2350b_m33_mcuboot.dts  # MCUboot variant + partitions
   zbook_rp2350b_m33-common.dtsi  # shared hardware (both variants) + LittleFS fstab
+  zbook_rp2350b_m33_p2*.overlay/.yaml + ..._p2-common.dtsi  # P2 revision (see below)
   *_defconfig / *.yaml / board.yml / board.cmake / Kconfig* / zbook-pinctrl.dtsi
-boards/shields/zbook_wifi/    # attachable ESP8266 Wi-Fi shield
+boards/shields/zbook_wifi/    # attachable ESP8266 / onboard Wi-Fi module
 snippets/                     # board-provided snippets (zbook-wifi-credentials-littlefs)
 zephyr/module.yml             # registers boards/ (board_root) and snippets/ (snippet_root)
+```
+
+## Hardware revisions
+
+The board comes in two hardware revisions, selected with `@<revision>` on the
+board target. `p1` is the default (no suffix needed) and matches the original
+pinout; `p2` re-pins almost every peripheral and adds new ones (hall sensor,
+temperature sensor, rotary encoder, motor driver, a 4-LED addressable strip,
+a second white LED, and an onboard Wi-Fi header) per `zbook-p2-schematics.pdf`.
+P2 also has an onboard RP2040 used purely as a debug probe (SWD + UART bridge,
+like a Pico's separate debug probe) — it is not a Zephyr build target.
+
+```bash
+west build -b zbook/rp2350b/m33          # P1 (default)
+west build -b "zbook@p2/rp2350b/m33"     # P2
 ```
 
 ## Usage
@@ -37,7 +53,8 @@ projects:
 Then build for the board target:
 
 ```bash
-west build -b zbook/rp2350b/m33                       # standalone
+west build -b zbook/rp2350b/m33                       # standalone, P1 (default)
+west build -b "zbook@p2/rp2350b/m33"                  # standalone, P2
 west build -b zbook/rp2350b/m33 --shield zbook_wifi   # + Wi-Fi
 west build -b zbook/rp2350b/m33 --shield zbook_wifi -S zbook-wifi-credentials-littlefs  # + LittleFS creds
 west build -b zbook/rp2350b/m33/mcuboot --sysbuild    # MCUboot layout
@@ -45,10 +62,16 @@ west build -b zbook/rp2350b/m33/mcuboot --sysbuild    # MCUboot layout
 
 ## Board targets
 
-| Target                       | Layout                                            |
-|------------------------------|---------------------------------------------------|
-| `zbook/rp2350b/m33`          | Standalone (boots directly), `storage` partition  |
-| `zbook/rp2350b/m33/mcuboot`  | MCUboot layout, app in slot-0                      |
+| Target                              | Layout                                            |
+|--------------------------------------|---------------------------------------------------|
+| `zbook/rp2350b/m33`                  | Standalone (boots directly), `storage` partition, P1 |
+| `zbook@p2/rp2350b/m33`               | Same as above, P2 hardware revision                |
+| `zbook/rp2350b/m33/mcuboot`          | MCUboot layout, app in slot-0, P1                  |
+| `zbook@p2/rp2350b/m33/mcuboot`       | MCUboot layout, app in slot-0, P2                  |
+
+The `zbook_wifi` shield works on both revisions; on P2 it uses the onboard
+Wi-Fi header's WIFI_NRST/WIFI_EN pins automatically (see
+`boards/shields/zbook_wifi/boards/`).
 
 ## Snippets
 
