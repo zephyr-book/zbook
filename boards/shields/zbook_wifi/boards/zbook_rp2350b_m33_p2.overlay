@@ -1,0 +1,16 @@
+/*
+ * Copyright (c) 2026 Centro de Inovacao EDGE
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * P2 moved the Wi-Fi module from a pluggable shield connector onto the
+ * onboard Wi-Fi header (H2), which names the reset/enable lines WIFI_NRST
+ * (GPIO16) and WIFI_EN (GPIO17) instead of P1's GPIO18/GPIO19. uart1 itself
+ * (P20/P21) is unchanged.
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+&esp8266 {
+	reset-gpios = <&gpio0 16 GPIO_ACTIVE_LOW>;
+	power-gpios = <&gpio0 17 GPIO_ACTIVE_HIGH>;
+};

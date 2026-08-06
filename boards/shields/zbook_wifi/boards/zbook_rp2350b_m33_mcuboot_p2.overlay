@@ -1,0 +1,8 @@
+/*
+ * Copyright (c) 2026 Centro de Inovacao EDGE
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * See zbook_rp2350b_m33_p2.overlay (same hardware, mcuboot variant).
+ */
+
+#include "zbook_rp2350b_m33_p2.overlay"
