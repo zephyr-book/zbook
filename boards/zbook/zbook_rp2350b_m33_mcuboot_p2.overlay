@@ -1,0 +1,8 @@
+/*
+ * Board revision overlay: applied automatically when building for
+ * zbook/rp2350b/m33/mcuboot@p2.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include "zbook_rp2350b_m33_p2-common.dtsi"
