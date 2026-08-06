@@ -1,0 +1,388 @@
+/**
+ * @file zbook_rp2350b_m33_p2-common.dtsi
+ * @brief Hardware description for the Zbook P2 revision. Applied as a board
+ *        revision overlay on top of zbook_rp2350b_m33-common.dtsi (the P1 /
+ *        default revision): P2 re-pins almost every peripheral and adds new
+ *        ones, so this file deletes the P1 nodes that no longer apply and
+ *        redefines them with the pin assignments from the P2 schematic
+ *        (zbook-p2-schematics.pdf, revision P2, released 2026-04-22).
+ *
+ *        Not modelled here: the onboard RP2040 (U3), which acts purely as a
+ *        debug probe (SWD + UART bridge) for the RP2350B on the "Prog USB-C"
+ *        port, the same way a Pico's separate debug probe would. It is not a
+ *        Zephyr build target for this board.
+ *
+ * @copyright Copyright (c) Centro de Inovação EDGE
+ */
+
+#include <zephyr/dt-bindings/led/led.h>
+#include <zephyr/dt-bindings/pwm/pwm.h>
+#include <zephyr/dt-bindings/pinctrl/rpi-pico-rp2350b-pinctrl.h>
+
+/* P1 peripherals that were re-pinned, replaced, or removed on P2. */
+/delete-node/ &blue_led;
+/delete-node/ &green_led;
+/delete-node/ &yellow_led;
+/delete-node/ &red_led;
+/delete-node/ &button1;
+/delete-node/ &button2;
+/delete-node/ &button3;
+/delete-node/ &button4;
+/delete-node/ &microphone;
+/delete-node/ &pico_header;
+/delete-node/ &pwm_buzzer;
+/delete-node/ &pwm_mosfet;
+/delete-node/ &spibb0;
+/delete-node/ &pio_ws2812;
+/delete-node/ &ir_emitter;
+/delete-node/ &int1;
+/delete-node/ &int2;
+/delete-node/ &display_reset;
+/delete-node/ &display_en;
+/delete-node/ &ir_receiver;
+
+/* Pin groups that moved. i2c0 (P4/P5) and uart1 (P20/P21) keep P1's pins:
+ * uart1 now feeds the onboard Wi-Fi header (H2) instead of the zbook_wifi
+ * shield connector, see boards/shields/zbook_wifi/boards/ for the P2
+ * reset/enable gpio override.
+ */
+&pinctrl {
+	spi0_default: spi0_default {
+		group1 {
+			pinmux = <SPI0_SCK_P34>, <SPI0_TX_P35>;
+		};
+		group2 {
+			pinmux = <SPI0_RX_P36>;
+			input-enable;
+		};
+	};
+
+	spi1_default: spi1_default {
+		group1 {
+			pinmux = <SPI1_SCK_P10>, <SPI1_TX_P11>;
+		};
+		group2 {
+			pinmux = <SPI1_RX_P8>;
+			input-enable;
+		};
+	};
+
+	adc_default: adc_default {
+		group1 {
+			pinmux = <ADC_CH0_P40>, <ADC_CH1_P41>, <ADC_CH4_P44>;
+			input-enable;
+		};
+	};
+
+	pwm_default: pwm_default {
+		group1 {
+			pinmux = <PWM_3B_P7>, <PWM_7B_P31>;
+		};
+	};
+
+	pio1_ws2812_default: pio1_ws2812_default {
+		group1 {
+			pinmux = <PIO1_P32>;
+		};
+	};
+};
+
+/ {
+	aliases {
+		led0 = &led0;
+		led1 = &led1;
+		led2 = &led2;
+		led3 = &led3;
+		led4 = &white_led;
+		button0 = &button0;
+		button1 = &button1;
+		button2 = &button2;
+		button3 = &button3;
+		led-strip = &ws2812;
+		pwm-buzzer = &pwm_buzzer;
+		pwm-mosfet = &pwm_mosfet;
+	};
+
+	/* Direct resistor-to-+3V3 LEDs (no driver transistor): the GPIO sinks
+	 * current, so these are active-low, same as P1's LEDs.
+	 */
+	leds {
+		compatible = "gpio-leds";
+
+		led0: led0 {
+			gpios = <&gpio0 24 GPIO_ACTIVE_LOW>;
+		};
+
+		led1: led1 {
+			gpios = <&gpio0 25 GPIO_ACTIVE_LOW>;
+		};
+
+		led2: led2 {
+			gpios = <&gpio0 26 GPIO_ACTIVE_LOW>;
+		};
+
+		led3: led3 {
+			gpios = <&gpio0 27 GPIO_ACTIVE_LOW>;
+		};
+
+		/* Driven through Q6 (FDN327N) low-side N-MOSFET: active-high. */
+		white_led: white {
+			gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	buttons {
+		compatible = "gpio-keys";
+
+		button0: button0 {
+			label = "BUTTON0";
+			gpios = <&gpio0 23 GPIO_ACTIVE_LOW>;
+		};
+
+		button1: button1 {
+			label = "BUTTON1";
+			gpios = <&gpio0 22 GPIO_ACTIVE_LOW>;
+		};
+
+		button2: button2 {
+			label = "BUTTON2";
+			gpios = <&gpio0 19 GPIO_ACTIVE_LOW>;
+		};
+
+		button3: button3 {
+			label = "BUTTON3";
+			gpios = <&gpio0 18 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	/* BUZZER_GPIO (piezo, Q7) and MOTOR_EN (DC motor, Q9) are both driven
+	 * through low-side N-MOSFETs onto PWM-capable pins.
+	 */
+	pwm_outputs {
+		compatible = "pwm-leds";
+
+		pwm_buzzer: pwm_buzzer_node {
+			pwms = <&pwm 15 PWM_USEC(500) PWM_POLARITY_NORMAL>;
+		};
+
+		pwm_mosfet: pwm_mosfet_node {
+			pwms = <&pwm 7 PWM_MSEC(20) PWM_POLARITY_NORMAL>;
+		};
+	};
+};
+
+&spi0 {
+	pinctrl-0 = <&spi0_default>;
+	pinctrl-names = "default";
+	cs-gpios = <&gpio0_hi 5 GPIO_ACTIVE_LOW>; /* GPIO37 = SD_CS */
+
+	status = "okay";
+	sdhc0: sdhc@0 {
+		compatible = "zephyr,sdhc-spi-slot";
+		reg = <0>;
+		status = "okay";
+		mmc {
+			compatible = "zephyr,sdmmc-disk";
+			disk-name = "SD";
+			status = "okay";
+		};
+		spi-max-frequency = <24000000>;
+	};
+};
+
+&spi1 {
+	pinctrl-0 = <&spi1_default>;
+	pinctrl-names = "default";
+
+	cs-gpios = <&gpio0 9 GPIO_ACTIVE_LOW>; /* GPIO09 = SPI_ACCEL_CS, BMI323 */
+
+	status = "okay";
+};
+
+/* i2c0 (P4/P5) is unchanged from P1 and already enabled by
+ * zbook_rp2350b_m33-common.dtsi. The OLED display (H3) and TMP1075
+ * temperature sensor both sit on it; instantiate their drivers from the
+ * application.
+ */
+
+&gpio0 {
+	status = "okay";
+
+	/delete-node/ actuators;
+	/delete-node/ accelerometer;
+	/delete-node/ display;
+
+	actuators {
+		compatible = "gpio-leds";
+
+		/* Driven through Q8 (FDN327N) low-side N-MOSFET: active-high. */
+		ir_emitter: ir_emitter {
+			gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
+			label = "IR Emitter";
+		};
+	};
+
+	accelerometer {
+		compatible = "gpio-keys";
+
+		int1: int1 {
+			gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>;
+			label = "Accelerometer INT1";
+		};
+
+		int2: int2 {
+			gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>;
+			label = "Accelerometer INT2";
+		};
+	};
+
+	sensors {
+		compatible = "gpio-keys";
+
+		/* TMAG5213 hall sensor, push-pull digital output. */
+		mag_sense: mag-sense {
+			gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>;
+			label = "Hall Sensor";
+		};
+
+		/* TMP1075 ALERT, open-drain; no external pull-up spotted on the
+		 * schematic so pull the internal one up.
+		 */
+		temp_alert: temp-alert {
+			gpios = <&gpio0 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			label = "Temperature Sensor Alert";
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_default>;
+	pinctrl-names = "default";
+};
+
+&uart1 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart1_default>;
+	pinctrl-names = "default";
+	/* Wi-Fi module lives on the onboard header (H2), enabled via the
+	 * zbook_wifi shield (--shield zbook_wifi); the shield's P2-specific
+	 * board overlay swaps in WIFI_NRST/WIFI_EN.
+	 */
+};
+
+&adc {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	pinctrl-0 = <&adc_default>;
+	pinctrl-names = "default";
+
+	/delete-node/ channel@0;
+	/delete-node/ channel@2;
+	/delete-node/ channel@3;
+
+	/* AC-coupled electret microphone (MK1), not a resistive divider. */
+	microphone_adc: channel@0 {
+		reg = <0>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <0>;
+		zephyr,resolution = <12>;
+	};
+
+	potentiometer: channel@1 {
+		reg = <1>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <0>;
+		zephyr,resolution = <12>;
+	};
+
+	ldr_adc: channel@4 {
+		reg = <4>;
+		zephyr,gain = "ADC_GAIN_1";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <0>;
+		zephyr,resolution = <12>;
+	};
+};
+
+&pio1 {
+	status = "okay";
+
+	/* 4x FZ2812-5050 daisy-chained (P1 only had a 1-LED chain). */
+	pio_ws2812: ws2812 {
+		compatible = "worldsemi,ws2812-rpi_pico-pio";
+		status = "okay";
+		pinctrl-0 = <&pio1_ws2812_default>;
+		pinctrl-names = "default";
+		bit-waveform = <3>, <3>, <4>;
+
+		ws2812: ws2812 {
+			status = "okay";
+			gpios = <&gpio0_hi 0 GPIO_ACTIVE_HIGH>; /* GPIO32 = LED_ADDR */
+			chain-length = <4>;
+			color-mapping = <LED_COLOR_ID_GREEN
+			LED_COLOR_ID_RED
+			LED_COLOR_ID_BLUE>;
+			reset-delay = <280>;
+			frequency = <800000>;
+		};
+	};
+};
+
+&pwm {
+	status = "okay";
+	pinctrl-0 = <&pwm_default>;
+	pinctrl-names = "default";
+	divider-int-3 = <255>;
+	divider-int-7 = <255>;
+};
+
+&gpio0_hi {
+	status = "okay";
+
+	/delete-node/ sensors;
+
+	sensors {
+		compatible = "gpio-keys";
+
+		/* Phototransistor (Q5) with pull-up to +3V3: active-high, same
+		 * convention as P1's ir_receiver.
+		 */
+		ir_receiver: ir-receiver {
+			gpios = <&gpio0_hi 15 GPIO_ACTIVE_HIGH>; /* GPIO47 */
+			label = "IR Receiver";
+		};
+
+		/* MicroSD card-detect switch, external 10k pull-up to +3V3. */
+		sd_cd: sd-cd {
+			gpios = <&gpio0_hi 1 GPIO_ACTIVE_LOW>; /* GPIO33 */
+			label = "MicroSD Card Detect";
+		};
+	};
+
+	/* PEC12R rotary encoder: A/B/push, each with a 10k pull-up to +3V3. */
+	encoder {
+		compatible = "gpio-keys";
+
+		enc_a: enc-a {
+			gpios = <&gpio0_hi 10 GPIO_ACTIVE_LOW>; /* GPIO42 */
+			label = "Encoder A";
+		};
+
+		enc_b: enc-b {
+			gpios = <&gpio0_hi 11 GPIO_ACTIVE_LOW>; /* GPIO43 */
+			label = "Encoder B";
+		};
+
+		enc_button: enc-button {
+			gpios = <&gpio0_hi 6 GPIO_ACTIVE_LOW>; /* GPIO38 */
+			label = "Encoder Button";
+		};
+	};
+};
