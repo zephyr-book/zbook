@@ -6,6 +6,12 @@ board:
   full_name: zbook
   name: zbook
   vendor: edge
+  revision:
+    format: custom
+    default: p2
+    revisions:
+      - name: p1
+      - name: p2
   socs:
     - name: rp2350b
       variants:
