@@ -7,8 +7,12 @@ board:
   name: zbook
   vendor: edge
   revision:
+    # format: custom means Zephyr includes revision.cmake and ignores the
+    # `default` key entirely (see cmake/modules/boards.cmake), so the real
+    # default lives in revision.cmake. This is kept in sync only so the
+    # metadata does not contradict it.
     format: custom
-    default: p2
+    default: p1
     revisions:
       - name: p1
       - name: p2

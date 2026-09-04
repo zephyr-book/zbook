@@ -18,6 +18,7 @@
 #include <zephyr/dt-bindings/led/led.h>
 #include <zephyr/dt-bindings/pwm/pwm.h>
 #include <zephyr/dt-bindings/pinctrl/rpi-pico-rp2350b-pinctrl.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
 
 /* P1 peripherals that were re-pinned, replaced, or removed on P2. */
 /delete-node/ &blue_led;
@@ -101,6 +102,20 @@
 		led-strip = &ws2812;
 		pwm-buzzer = &pwm_buzzer;
 		pwm-mosfet = &pwm_mosfet;
+
+		/* P2-only peripherals. No P1 counterpart, so these aliases
+		 * exist purely to keep application code off raw node labels.
+		 */
+		hall-sensor = &mag_sense;
+		temp-alert = &temp_alert;
+		accel-int2 = &int2;
+		enc-button = &enc_button;
+		motor-pwm = &pwm_mosfet;
+		led-white = &white_led;
+	};
+
+	chosen {
+		zephyr,display = &oled;
 	};
 
 	/* Direct resistor-to-+3V3 LEDs (no driver transistor): the GPIO sinks
@@ -197,13 +212,54 @@
 	cs-gpios = <&gpio0 9 GPIO_ACTIVE_LOW>; /* GPIO09 = SPI_ACCEL_CS, BMI323 */
 
 	status = "okay";
+
+	bmi323: bmi323@0 {
+		compatible = "bosch,bmi323";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+		/* INT1 (GPIO15). Mandatory: the driver reads int-gpios with
+		 * GPIO_DT_SPEC_INST_GET, which has no _OR fallback.
+		 */
+		int-gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
 };
 
 /* i2c0 (P4/P5) is unchanged from P1 and already enabled by
- * zbook_rp2350b_m33-common.dtsi. The OLED display (H3) and TMP1075
- * temperature sensor both sit on it; instantiate their drivers from the
- * application.
+ * zbook_rp2350b_m33-common.dtsi. The OLED display (H3) and the TMP1075
+ * temperature sensor both sit on it. On P1 the display was driven over a
+ * bit-bang SPI bus (spibb0, deleted above); on P2 it is a plain I2C device.
  */
+&i2c0 {
+	tmp1075: tmp1075@48 {
+		compatible = "ti,tmp1075";
+		reg = <0x48>;
+		/* ALERT (GPIO2) is left to the temp_alert gpio-key: the driver
+		 * takes alert-gpios via GPIO_DT_SPEC_INST_GET_OR, so it is
+		 * optional and the pin is more useful as an observable input
+		 * during bring-up.
+		 */
+		status = "okay";
+	};
+
+	/* SH1106 is a 132x64 controller driving a 128x64 panel, hence the
+	 * 2-column segment offset. Handled by Zephyr's in-tree ssd1306 driver.
+	 */
+	oled: sh1106@3c {
+		compatible = "sinowealth,sh1106";
+		reg = <0x3c>;
+		width = <128>;
+		height = <64>;
+		segment-offset = <2>;
+		page-offset = <0>;
+		display-offset = <0>;
+		multiplex-ratio = <63>;
+		prechargep = <0x22>;
+		segment-remap;
+		com-invdir;
+		status = "okay";
+	};
+};
 
 &gpio0 {
 	status = "okay";
@@ -222,13 +278,12 @@
 		};
 	};
 
+	/* INT1 is claimed by the bmi323 node below (int-gpios), so only INT2 is
+	 * exposed as a plain GPIO here -- the Zephyr BMI323 driver maps every
+	 * interrupt onto INT1 and would fight a gpio-keys child for the pin.
+	 */
 	accelerometer {
 		compatible = "gpio-keys";
-
-		int1: int1 {
-			gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>;
-			label = "Accelerometer INT1";
-		};
 
 		int2: int2 {
 			gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>;
@@ -366,19 +421,24 @@
 		};
 	};
 
-	/* PEC12R rotary encoder: A/B/push, each with a 10k pull-up to +3V3. */
+	/* PEC12R rotary encoder: A/B/push, each with a 10k pull-up to +3V3.
+	 * A/B are decoded by the gpio-qdec input driver rather than exposed as
+	 * gpio-keys -- both drivers install their own pin interrupts, so the two
+	 * cannot share the pins. The push-switch is unrelated and stays a key.
+	 */
+	encoder_qdec: encoder-qdec {
+		compatible = "gpio-qdec";
+		gpios = <&gpio0_hi 10 GPIO_ACTIVE_LOW>,  /* GPIO42 = ENC_A */
+			<&gpio0_hi 11 GPIO_ACTIVE_LOW>;  /* GPIO43 = ENC_B */
+		/* PEC12R runs one full quadrature period per detent. */
+		steps-per-period = <4>;
+		zephyr,axis = <INPUT_REL_WHEEL>;
+		sample-time-us = <2000>;
+		idle-timeout-ms = <200>;
+	};
+
 	encoder {
 		compatible = "gpio-keys";
-
-		enc_a: enc-a {
-			gpios = <&gpio0_hi 10 GPIO_ACTIVE_LOW>; /* GPIO42 */
-			label = "Encoder A";
-		};
-
-		enc_b: enc-b {
-			gpios = <&gpio0_hi 11 GPIO_ACTIVE_LOW>; /* GPIO43 */
-			label = "Encoder B";
-		};
 
 		enc_button: enc-button {
 			gpios = <&gpio0_hi 6 GPIO_ACTIVE_LOW>; /* GPIO38 */
