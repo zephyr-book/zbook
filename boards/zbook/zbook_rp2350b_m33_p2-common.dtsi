@@ -77,13 +77,13 @@
 
 	pwm_default: pwm_default {
 		group1 {
-			pinmux = <PWM_3B_P7>, <PWM_7B_P31>;
+			pinmux = <PWM_3B_P7>, <PWM_8A_P32>;
 		};
 	};
 
 	pio1_ws2812_default: pio1_ws2812_default {
 		group1 {
-			pinmux = <PIO1_P32>;
+			pinmux = <PIO1_P31>;
 		};
 	};
 };
@@ -181,7 +181,8 @@
 		compatible = "pwm-leds";
 
 		pwm_buzzer: pwm_buzzer_node {
-			pwms = <&pwm 15 PWM_USEC(500) PWM_POLARITY_NORMAL>;
+			/* GPIO32 = BUZZER_GPIO -> PWM slice 8, channel A. */
+			pwms = <&pwm 16 PWM_USEC(500) PWM_POLARITY_NORMAL>;
 		};
 
 		pwm_mosfet: pwm_mosfet_node {
@@ -361,7 +362,7 @@
 
 		ws2812: ws2812 {
 			status = "okay";
-			gpios = <&gpio0_hi 0 GPIO_ACTIVE_HIGH>; /* GPIO32 = LED_ADDR */
+			gpios = <&gpio0 31 GPIO_ACTIVE_HIGH>; /* GPIO31 = LED_ADDR */
 			chain-length = <4>;
 			color-mapping = <LED_COLOR_ID_GREEN
 			LED_COLOR_ID_RED
@@ -376,8 +377,10 @@
 	status = "okay";
 	pinctrl-0 = <&pwm_default>;
 	pinctrl-names = "default";
-	divider-int-3 = <255>;
-	divider-int-7 = <255>;
+	/delete-property/ divider-int-0;
+
+	divider-int-3 = <255>;   /* slice 3 = MOTOR_EN on GPIO7 */
+	divider-int-8 = <255>;   /* slice 8 = BUZZER_GPIO on GPIO32 */
 };
 
 &gpio0_hi {
