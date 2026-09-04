@@ -1,0 +1,36 @@
+# Copyright (c) Centro de Inovação EDGE
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  Group of GPIO lines exposed to the application.
+
+  A container for board signals that an application reads directly with
+  GPIO_DT_SPEC_GET -- sensor outputs, interrupt lines, detect switches -- and
+  which are deliberately not bound to any driver.
+
+  This exists because "gpio-keys" is not a neutral way to describe a GPIO: it
+  declares the child a key that generates input events, the input_gpio_keys
+  driver binds to it (it is `default y` whenever such a node exists) and
+  static-asserts that every child carries a zephyr,code. Signals like a
+  temperature-sensor ALERT or an accelerometer INT are not keys and have no
+  meaningful key code, so they are described here instead. Real buttons keep
+  "gpio-keys" and carry a zephyr,code.
+
+  A binding is still required even though no driver consumes it: without one,
+  edtlib cannot type `gpios` as a phandle-array and the GPIO accessor macros
+  are never generated.
+
+compatible: "edge,gpio-inputs"
+
+include: base.yaml
+
+child-binding:
+  description: A single GPIO line.
+  properties:
+    gpios:
+      type: phandle-array
+      required: true
+      description: The GPIO this signal is wired to.
+    label:
+      type: string
+      description: Human-readable name for the signal.

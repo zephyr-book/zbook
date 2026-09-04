@@ -150,21 +150,25 @@
 		compatible = "gpio-keys";
 
 		button0: button0 {
+			zephyr,code = <INPUT_BTN_0>;
 			label = "BUTTON0";
 			gpios = <&gpio0 23 GPIO_ACTIVE_LOW>;
 		};
 
 		button1: button1 {
+			zephyr,code = <INPUT_BTN_1>;
 			label = "BUTTON1";
 			gpios = <&gpio0 22 GPIO_ACTIVE_LOW>;
 		};
 
 		button2: button2 {
+			zephyr,code = <INPUT_BTN_2>;
 			label = "BUTTON2";
 			gpios = <&gpio0 19 GPIO_ACTIVE_LOW>;
 		};
 
 		button3: button3 {
+			zephyr,code = <INPUT_BTN_3>;
 			label = "BUTTON3";
 			gpios = <&gpio0 18 GPIO_ACTIVE_LOW>;
 		};
@@ -283,7 +287,7 @@
 	 * interrupt onto INT1 and would fight a gpio-keys child for the pin.
 	 */
 	accelerometer {
-		compatible = "gpio-keys";
+		compatible = "edge,gpio-inputs";
 
 		int2: int2 {
 			gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>;
@@ -292,7 +296,7 @@
 	};
 
 	sensors {
-		compatible = "gpio-keys";
+		compatible = "edge,gpio-inputs";
 
 		/* TMAG5213 hall sensor, push-pull digital output. */
 		mag_sense: mag-sense {
@@ -404,7 +408,7 @@
 	/delete-node/ sensors;
 
 	sensors {
-		compatible = "gpio-keys";
+		compatible = "edge,gpio-inputs";
 
 		/* Phototransistor (Q5) with pull-up to +3V3: active-high, same
 		 * convention as P1's ir_receiver.
@@ -441,6 +445,7 @@
 		compatible = "gpio-keys";
 
 		enc_button: enc-button {
+			zephyr,code = <INPUT_KEY_ENTER>;
 			gpios = <&gpio0_hi 6 GPIO_ACTIVE_LOW>; /* GPIO38 */
 			label = "Encoder Button";
 		};
