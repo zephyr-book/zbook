@@ -8,6 +8,7 @@
 * @copyright Copyright (c) Centro de Inovação EDGE
 */
 
+#include <zephyr/dt-bindings/input/input-event-codes.h>
 #include <zephyr/dt-bindings/led/led.h>
 #include <zephyr/dt-bindings/pwm/pwm.h>
 #include "zbook-pinctrl.dtsi"
@@ -86,21 +87,25 @@
 		compatible = "gpio-keys";
 
 		button1: button1 {
+			zephyr,code = <INPUT_KEY_UP>;
 			label = "BTN_UP";
 			gpios = <&gpio0 22 GPIO_ACTIVE_LOW>;
 		};
 
 		button2: button2 {
+			zephyr,code = <INPUT_KEY_RIGHT>;
 			label = "BTN_RIGHT";
 			gpios = <&gpio0 24 GPIO_ACTIVE_LOW>;
 		};
 
 		button3: button3 {
+			zephyr,code = <INPUT_KEY_LEFT>;
 			label = "BTN_LEFT";
 			gpios = <&gpio0 25 GPIO_ACTIVE_LOW>;
 		};
 
 		button4: button4 {
+			zephyr,code = <INPUT_KEY_DOWN>;
 			label = "BTN_DOWN";
 			gpios = <&gpio0 23 GPIO_ACTIVE_LOW>;
 		};
@@ -214,7 +219,7 @@
 	};
 
 	accelerometer {
-		compatible = "gpio-keys";
+		compatible = "edge,gpio-inputs";
 
 		int1: int1 {
 			gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>;
@@ -328,7 +333,7 @@
 	status = "okay";
 
 	sensors {
-		compatible = "gpio-keys";
+		compatible = "edge,gpio-inputs";
 
 		ir_receiver: ir-receiver {
 			gpios = <&gpio0_hi 1 GPIO_ACTIVE_HIGH>;

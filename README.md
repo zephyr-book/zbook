@@ -18,8 +18,28 @@ boards/zbook/                 # board definition
   *_defconfig / *.yaml / board.yml / board.cmake / Kconfig* / zbook-pinctrl.dtsi
 boards/shields/zbook_wifi/    # attachable ESP8266 / onboard Wi-Fi module
 snippets/                     # board-provided snippets (zbook-wifi-credentials-littlefs)
-zephyr/module.yml             # registers boards/ (board_root) and snippets/ (snippet_root)
+dts/bindings/                 # edge,gpio-inputs (see GPIO signals below)
+zephyr/module.yml             # registers boards/ (board_root), dts/ (dts_root)
+                              #   and snippets/ (snippet_root)
 ```
+
+## GPIO signals: keys vs. plain inputs
+
+Buttons are described as `gpio-keys` and each carries a `zephyr,code`, so
+Zephyr's `input_gpio_keys` driver binds to them and reports real input events.
+P1's four buttons are directional (`INPUT_KEY_UP` / `RIGHT` / `LEFT` / `DOWN`,
+matching the silkscreen); P2's are unlabelled and use `INPUT_BTN_0..3`. The P2
+encoder push-switch is `INPUT_KEY_ENTER`.
+
+Everything else that is merely *a GPIO the application reads* — accelerometer
+INT lines, the TMP1075 ALERT, the hall-sensor output, the IR receiver, the
+microSD card-detect — uses this module's own `edge,gpio-inputs` binding
+instead. Those signals are not keys, have no meaningful key code, and
+`input_gpio_keys` static-asserts that every `gpio-keys` child has one, so
+describing them as keys forced applications to switch the driver off. A
+binding is still needed (rather than no `compatible` at all) because without
+one `gpios` is not typed as a phandle-array and the `GPIO_DT_SPEC_GET` macros
+are never generated.
 
 ## Hardware revisions
 
