@@ -53,7 +53,7 @@ like a Pico's separate debug probe) — it is not a Zephyr build target.
 
 ```bash
 west build -b zbook/rp2350b/m33          # P1 (default)
-west build -b "zbook@p2/rp2350b/m33"     # P2
+west build -b zbook@p2/rp2350b/m33     # P2
 ```
 
 ## Usage
@@ -74,7 +74,7 @@ Then build for the board target:
 
 ```bash
 west build -b zbook/rp2350b/m33                       # standalone, P1 (default)
-west build -b "zbook@p2/rp2350b/m33"                  # standalone, P2
+west build -b zbook@p2/rp2350b/m33                  # standalone, P2
 west build -b zbook/rp2350b/m33 --shield zbook_wifi   # + Wi-Fi
 west build -b zbook/rp2350b/m33 --shield zbook_wifi -S zbook-wifi-credentials-littlefs  # + LittleFS creds
 west build -b zbook/rp2350b/m33/mcuboot --sysbuild    # MCUboot layout
