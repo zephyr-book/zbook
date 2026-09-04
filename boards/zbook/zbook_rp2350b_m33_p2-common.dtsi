@@ -229,26 +229,13 @@
 	};
 };
 
-/* i2c0 (P4/P5) is unchanged from P1 and already enabled by
- * zbook_rp2350b_m33-common.dtsi. The OLED display (H3) and the TMP1075
- * temperature sensor both sit on it. On P1 the display was driven over a
- * bit-bang SPI bus (spibb0, deleted above); on P2 it is a plain I2C device.
- */
 &i2c0 {
 	tmp1075: tmp1075@48 {
 		compatible = "ti,tmp1075";
 		reg = <0x48>;
-		/* ALERT (GPIO2) is left to the temp_alert gpio-key: the driver
-		 * takes alert-gpios via GPIO_DT_SPEC_INST_GET_OR, so it is
-		 * optional and the pin is more useful as an observable input
-		 * during bring-up.
-		 */
 		status = "okay";
 	};
 
-	/* SH1106 is a 132x64 controller driving a 128x64 panel, hence the
-	 * 2-column segment offset. Handled by Zephyr's in-tree ssd1306 driver.
-	 */
 	oled: sh1106@3c {
 		compatible = "sinowealth,sh1106";
 		reg = <0x3c>;
@@ -282,10 +269,6 @@
 		};
 	};
 
-	/* INT1 is claimed by the bmi323 node below (int-gpios), so only INT2 is
-	 * exposed as a plain GPIO here -- the Zephyr BMI323 driver maps every
-	 * interrupt onto INT1 and would fight a gpio-keys child for the pin.
-	 */
 	accelerometer {
 		compatible = "edge,gpio-inputs";
 
@@ -298,17 +281,17 @@
 	sensors {
 		compatible = "edge,gpio-inputs";
 
-		/* TMAG5213 hall sensor, push-pull digital output. */
+		/* Not push-pull: needs a pull-up, and there is no external one.
+		 * It can only drive the line low, so asserted is low.
+		 */
 		mag_sense: mag-sense {
-			gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpio0 3 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 			label = "Hall Sensor";
 		};
 
-		/* TMP1075 ALERT, open-drain; no external pull-up spotted on the
-		 * schematic so pull the internal one up.
-		 */
+		/* Open-drain, with an external pull-up already fitted. */
 		temp_alert: temp-alert {
-			gpios = <&gpio0 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			gpios = <&gpio0 2 GPIO_ACTIVE_LOW>;
 			label = "Temperature Sensor Alert";
 		};
 	};
@@ -326,10 +309,6 @@
 	current-speed = <115200>;
 	pinctrl-0 = <&uart1_default>;
 	pinctrl-names = "default";
-	/* Wi-Fi module lives on the onboard header (H2), enabled via the
-	 * zbook_wifi shield (--shield zbook_wifi); the shield's P2-specific
-	 * board overlay swaps in WIFI_NRST/WIFI_EN.
-	 */
 };
 
 &adc {
@@ -344,7 +323,6 @@
 	/delete-node/ channel@2;
 	/delete-node/ channel@3;
 
-	/* AC-coupled electret microphone (MK1), not a resistive divider. */
 	microphone_adc: channel@0 {
 		reg = <0>;
 		zephyr,gain = "ADC_GAIN_1";
@@ -410,9 +388,6 @@
 	sensors {
 		compatible = "edge,gpio-inputs";
 
-		/* Phototransistor (Q5) with pull-up to +3V3: active-high, same
-		 * convention as P1's ir_receiver.
-		 */
 		ir_receiver: ir-receiver {
 			gpios = <&gpio0_hi 15 GPIO_ACTIVE_HIGH>; /* GPIO47 */
 			label = "IR Receiver";
@@ -425,11 +400,6 @@
 		};
 	};
 
-	/* PEC12R rotary encoder: A/B/push, each with a 10k pull-up to +3V3.
-	 * A/B are decoded by the gpio-qdec input driver rather than exposed as
-	 * gpio-keys -- both drivers install their own pin interrupts, so the two
-	 * cannot share the pins. The push-switch is unrelated and stays a key.
-	 */
 	encoder_qdec: encoder-qdec {
 		compatible = "gpio-qdec";
 		gpios = <&gpio0_hi 10 GPIO_ACTIVE_LOW>,  /* GPIO42 = ENC_A */
