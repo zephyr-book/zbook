@@ -93,6 +93,19 @@ The `zbook_wifi` shield works on both revisions; on P2 it uses the onboard
 Wi-Fi header's WIFI_NRST/WIFI_EN pins automatically (see
 `boards/shields/zbook_wifi/boards/`).
 
+## Flashing
+
+OpenOCD is the default runner; probe-rs is also wired up:
+
+```bash
+west flash                      # openocd (default)
+west flash --runner probe-rs    # probe-rs, chip RP235x
+```
+
+RP2350 support in OpenOCD is recent, so a distribution package may be too old
+for this board; the Raspberry Pi fork (https://github.com/raspberrypi/openocd)
+is the reference build.
+
 ## Snippets
 
 `zephyr/module.yml` sets `snippet_root: .`, so snippets under `snippets/` are
